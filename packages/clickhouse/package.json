@@ -1,0 +1,22 @@
+{
+  "name": "@gigz/clickhouse",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^0.2.5",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@gigz/typescript-config": "workspace:*",
+    "bun-types": "latest"
+  }
+}

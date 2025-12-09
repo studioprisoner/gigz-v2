@@ -1,0 +1,19 @@
+{
+  "name": "@gigz/utils",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@gigz/typescript-config": "workspace:*",
+    "bun-types": "latest"
+  }
+}

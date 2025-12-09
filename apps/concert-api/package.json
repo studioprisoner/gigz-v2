@@ -1,0 +1,29 @@
+{
+  "name": "@gigz/concert-api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun run dist/index.js",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@gigz/clickhouse": "workspace:*",
+    "@gigz/trpc": "workspace:*",
+    "@gigz/redis": "workspace:*",
+    "@gigz/logger": "workspace:*",
+    "@gigz/config": "workspace:*",
+    "@gigz/types": "workspace:*",
+    "@trpc/server": "^10.45.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@gigz/typescript-config": "workspace:*",
+    "@gigz/eslint-config": "workspace:*",
+    "bun-types": "latest"
+  }
+}

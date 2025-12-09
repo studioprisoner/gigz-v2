@@ -202,3 +202,4 @@ bun run clean
 - TypeScript configuration is shared via `@gigz/typescript-config`
 - ESLint configuration is shared via `@gigz/eslint-config`
 - Always run `bun run typecheck` and `bun run lint` before committing
+- Use Linear MCP to read and follow instrucitons on work. Update Linear issues when working. For this proejct our issues are under GIG.
