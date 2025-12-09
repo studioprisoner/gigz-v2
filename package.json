@@ -1,0 +1,33 @@
+{
+  "name": "gigz-v2",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tooling/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:gateway": "bun run --cwd apps/gateway dev",
+    "dev:auth": "bun run --cwd apps/auth-api dev",
+    "dev:core": "bun run --cwd apps/core-api dev",
+    "dev:concert": "bun run --cwd apps/concert-api dev",
+    "dev:search": "bun run --cwd apps/search-api dev",
+    "dev:scraper": "bun run --cwd apps/scraper-worker dev",
+    "dev:notifications": "bun run --cwd apps/notification-worker dev",
+    "build": "bun run --filter '*' build",
+    "test": "bun run --filter '*' test",
+    "lint": "bun run --filter '*' lint",
+    "typecheck": "bun run --filter '*' typecheck",
+    "db:generate": "bun run --cwd packages/db generate",
+    "db:migrate": "bun run --cwd packages/db migrate",
+    "db:push": "bun run --cwd packages/db push",
+    "db:studio": "bun run --cwd packages/db studio",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+  },
+  "devDependencies": {
+    "@gigz/typescript-config": "workspace:*",
+    "@gigz/eslint-config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}
