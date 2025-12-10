@@ -23,7 +23,7 @@ export async function query<T>(sql: string, params?: Record<string, unknown>): P
     query_params: params,
     format: 'JSONEachRow',
   });
-  return result.json<T>();
+  return result.json<T>() as Promise<T[]>;
 }
 
 export async function insert<T extends Record<string, unknown>>(
