@@ -18,7 +18,11 @@
     "@gigz/logger": "workspace:*",
     "@gigz/config": "workspace:*",
     "@gigz/types": "workspace:*",
+    "@gigz/clickhouse": "workspace:*",
     "@trpc/server": "^10.45.0",
+    "trpc-openapi": "^1.2.0",
+    "@aws-sdk/client-s3": "^3.500.0",
+    "@aws-sdk/s3-request-presigner": "^3.500.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
