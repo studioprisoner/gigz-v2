@@ -12,17 +12,24 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@gigz/clickhouse": "workspace:*",
+    "@gigz/db": "workspace:*",
     "@gigz/trpc": "workspace:*",
+    "@gigz/redis": "workspace:*",
     "@gigz/logger": "workspace:*",
     "@gigz/config": "workspace:*",
     "@gigz/types": "workspace:*",
-    "@trpc/server": "^10.45.0",
+    "@trpc/server": "11.0.0-rc.502",
+    "trpc-openapi": "^1.2.0",
     "meilisearch": "^0.38.0",
-    "zod": "^3.22.0"
+    "zod": "^3.23.8",
+    "pino": "^8.19.0"
   },
   "devDependencies": {
     "@gigz/typescript-config": "workspace:*",
     "@gigz/eslint-config": "workspace:*",
-    "bun-types": "latest"
+    "@types/bun": "latest",
+    "typescript": "^5.4.5",
+    "eslint": "^9.0.0"
   }
 }
