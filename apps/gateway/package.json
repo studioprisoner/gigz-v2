@@ -12,10 +12,12 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@gigz/trpc": "workspace:*",
+    "@gigz/redis": "workspace:*",
     "@gigz/logger": "workspace:*",
     "@gigz/config": "workspace:*",
-    "@trpc/server": "^10.45.0",
+    "@gigz/types": "workspace:*",
+    "pino": "^8.17.0",
+    "pino-pretty": "^10.3.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
