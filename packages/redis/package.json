@@ -6,13 +6,18 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
-    "./queue": "./src/queue.ts"
+    "./cache": "./src/cache.ts",
+    "./queue": "./src/queue.ts",
+    "./rate-limit": "./src/rate-limit.ts",
+    "./pubsub": "./src/pubsub.ts",
+    "./health": "./src/health.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "ioredis": "^5.3.2",
+    "bullmq": "^5.0.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
