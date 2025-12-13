@@ -14,7 +14,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const loginMutation = trpc.auth.adminLogin.useMutation({
+  const loginMutation = trpc.adminLogin.useMutation({
     onSuccess: (data) => {
       setAdminToken(data.accessToken);
       router.navigate({ to: '/dashboard' });

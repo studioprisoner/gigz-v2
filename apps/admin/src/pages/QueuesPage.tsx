@@ -1,7 +1,9 @@
 import React from 'react';
+import { Link } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatNumber, formatDate } from '@/lib/utils';
+import { trpc } from '@/lib/trpc';
 import {
   Play,
   Pause,
@@ -10,37 +12,61 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react';
 
 export function QueuesPage() {
-  // TODO: Implement real queue data fetching
-  const queues: any[] = [];
-  const isLoading = false;
-  const refetch = () => console.log('Refetch queues');
+  const { data: queuesData, isLoading, refetch } = trpc.listQueues.useQuery();
 
-  const pauseQueueMutation = { isPending: false };
-  const resumeQueueMutation = { isPending: false };
-  const retryJobMutation = { isPending: false };
-  const cleanQueueMutation = { isPending: false };
+  const pauseQueueMutation = trpc.toggleQueueStatus.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const resumeQueueMutation = trpc.toggleQueueStatus.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const cleanQueueMutation = trpc.clearQueue.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
   const handlePauseQueue = async (queueName: string) => {
-    console.log('Pause queue:', queueName);
+    await pauseQueueMutation.mutateAsync({
+      queueName,
+      action: 'pause',
+    });
   };
 
   const handleResumeQueue = async (queueName: string) => {
-    console.log('Resume queue:', queueName);
+    await resumeQueueMutation.mutateAsync({
+      queueName,
+      action: 'resume',
+    });
   };
 
   const handleRetryJob = async (queueName: string, jobId: string) => {
+    // TODO: Implement retry specific job functionality
     console.log('Retry job:', queueName, jobId);
   };
 
   const handleCleanQueue = async (queueName: string) => {
     if (confirm('Are you sure you want to clean completed and failed jobs from this queue?')) {
-      console.log('Clean queue:', queueName);
+      await cleanQueueMutation.mutateAsync({
+        queueName,
+        jobType: 'completed',
+      });
     }
   };
+
+  const queues = queuesData?.queues || [];
 
   if (isLoading) {
     return (
@@ -73,11 +99,22 @@ export function QueuesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Queue Management</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Monitor and manage background job queues
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Queue Management</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Monitor and manage background job queues
+          </p>
+        </div>
+        <Button
+          onClick={() => refetch()}
+          disabled={isLoading}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Queue Overview */}
@@ -86,19 +123,27 @@ export function QueuesPage() {
           <Card key={queue.name}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="capitalize">{queue.name}</CardTitle>
+                <Link to="/queues/$queueName" params={{ queueName: queue.name }}>
+                  <CardTitle className="capitalize hover:text-blue-600 cursor-pointer">
+                    {queue.name}
+                  </CardTitle>
+                </Link>
                 <div className="flex items-center space-x-1">
                   <div
                     className={`h-2 w-2 rounded-full ${
-                      queue.isPaused ? 'bg-red-500' : 'bg-green-500'
+                      queue.status === 'paused' ? 'bg-red-500' :
+                      queue.status === 'failed' ? 'bg-red-500' : 'bg-green-500'
                     }`}
                   />
-                  <span className="text-sm text-gray-500">
-                    {queue.isPaused ? 'Paused' : 'Active'}
+                  <span className="text-sm text-gray-500 capitalize">
+                    {queue.status}
                   </span>
                 </div>
               </div>
-              <CardDescription>{queue.description || 'Background job processing'}</CardDescription>
+              <CardDescription>
+                {queue.workers > 0 ? `${queue.workers} workers` : 'No workers'} •
+                Last activity: {queue.lastActivity ? formatDate(queue.lastActivity) : 'Never'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Job Stats */}
@@ -131,7 +176,17 @@ export function QueuesPage() {
 
               {/* Queue Actions */}
               <div className="flex flex-wrap gap-2">
-                {queue.isPaused ? (
+                <Link to="/queues/$queueName" params={{ queueName: queue.name }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Details
+                  </Button>
+                </Link>
+
+                {queue.status === 'paused' ? (
                   <Button
                     size="sm"
                     onClick={() => handleResumeQueue(queue.name)}
@@ -163,53 +218,22 @@ export function QueuesPage() {
                 </Button>
               </div>
 
-              {/* Recent Jobs */}
-              {queue.recentJobs?.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Recent Jobs
-                  </h4>
-                  <div className="space-y-2">
-                    {queue.recentJobs.slice(0, 3).map((job: any) => (
-                      <div
-                        key={job.id}
-                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
-                      >
-                        <div className="flex items-center space-x-2">
-                          {job.status === 'completed' && (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          )}
-                          {job.status === 'failed' && (
-                            <XCircle className="h-4 w-4 text-red-500" />
-                          )}
-                          {job.status === 'active' && (
-                            <Clock className="h-4 w-4 text-yellow-500" />
-                          )}
-                          {job.status === 'waiting' && (
-                            <AlertCircle className="h-4 w-4 text-blue-500" />
-                          )}
-                          <div>
-                            <div className="text-sm font-medium truncate max-w-32">
-                              {job.name}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {formatDate(job.processedOn || job.timestamp)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {job.status === 'failed' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleRetryJob(queue.name, job.id)}
-                            disabled={retryJobMutation.isPending}
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                          </Button>
-                        )}
+              {/* Queue Summary */}
+              {(queue.stats.waiting > 0 || queue.stats.failed > 0) && (
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    {queue.stats.waiting > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                        <span>{formatNumber(queue.stats.waiting)} jobs waiting</span>
                       </div>
-                    ))}
+                    )}
+                    {queue.stats.failed > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        <span>{formatNumber(queue.stats.failed)} failed jobs</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

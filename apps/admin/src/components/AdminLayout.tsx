@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   LogOut,
+  Cog,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,11 @@ const navigation = [
     name: 'Queues',
     to: '/queues',
     icon: Activity,
+  },
+  {
+    name: 'Workers',
+    to: '/workers',
+    icon: Cog,
   },
   {
     name: 'Concerts',

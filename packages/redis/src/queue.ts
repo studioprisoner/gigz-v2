@@ -435,6 +435,150 @@ export class RedisQueueFactory {
     }
   }
 
+  // Get jobs from queue by status
+  async getJobs(queueName: string): Promise<{
+    waiting: Job[];
+    active: Job[];
+    completed: Job[];
+    failed: Job[];
+    delayed: Job[];
+  }> {
+    const queue = this.getQueue(queueName);
+
+    if (!queue) {
+      throw new Error(`Queue '${queueName}' not found`);
+    }
+
+    try {
+      const [waiting, active, completed, failed, delayed] = await Promise.all([
+        queue.getJobs('waiting', 0, 49),
+        queue.getJobs('active', 0, 49),
+        queue.getJobs('completed', 0, 49),
+        queue.getJobs('failed', 0, 49),
+        queue.getJobs('delayed', 0, 49),
+      ]);
+
+      return {
+        waiting,
+        active,
+        completed,
+        failed,
+        delayed,
+      };
+    } catch (error) {
+      this.logger?.error('Failed to get jobs', {
+        queueName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  // Clear jobs from queue
+  async clearJobs(queueName: string, jobType: 'all' | 'waiting' | 'completed' | 'failed' | 'active'): Promise<number> {
+    const queue = this.getQueue(queueName);
+
+    if (!queue) {
+      throw new Error(`Queue '${queueName}' not found`);
+    }
+
+    try {
+      let clearedCount = 0;
+
+      if (jobType === 'all') {
+        // Clear all types
+        const results = await Promise.all([
+          queue.clean(0, 0, 'completed'),
+          queue.clean(0, 0, 'failed'),
+          queue.clean(0, 0, 'waiting'),
+          queue.clean(0, 0, 'active'),
+        ]);
+        clearedCount = results.reduce((total, result) => total + result.length, 0);
+      } else {
+        const result = await queue.clean(0, 0, jobType as any);
+        clearedCount = result.length;
+      }
+
+      this.logger?.info('Jobs cleared', {
+        queueName,
+        jobType,
+        clearedCount,
+      });
+
+      return clearedCount;
+
+    } catch (error) {
+      this.logger?.error('Failed to clear jobs', {
+        queueName,
+        jobType,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return 0;
+    }
+  }
+
+  // Retry failed jobs
+  async retryFailedJobs(queueName: string, jobIds?: string[]): Promise<number> {
+    const queue = this.getQueue(queueName);
+
+    if (!queue) {
+      throw new Error(`Queue '${queueName}' not found`);
+    }
+
+    try {
+      let retriedCount = 0;
+
+      if (jobIds && jobIds.length > 0) {
+        // Retry specific job IDs
+        for (const jobId of jobIds) {
+          try {
+            const job = await queue.getJob(jobId);
+            if (job && job.isFailed()) {
+              await job.retry();
+              retriedCount++;
+            }
+          } catch (error) {
+            this.logger?.warn('Failed to retry specific job', {
+              queueName,
+              jobId,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }
+      } else {
+        // Retry all failed jobs
+        const failedJobs = await queue.getJobs('failed', 0, 100);
+        for (const job of failedJobs) {
+          try {
+            await job.retry();
+            retriedCount++;
+          } catch (error) {
+            this.logger?.warn('Failed to retry job', {
+              queueName,
+              jobId: job.id,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
+      this.logger?.info('Failed jobs retried', {
+        queueName,
+        retriedCount,
+        specificJobs: !!jobIds,
+      });
+
+      return retriedCount;
+
+    } catch (error) {
+      this.logger?.error('Failed to retry failed jobs', {
+        queueName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return 0;
+    }
+  }
+
   // Setup worker event handlers
   private setupWorkerEvents(worker: Worker, queueName: string): void {
     worker.on('ready', () => {

@@ -4,47 +4,18 @@
 // === Client Management ===
 export {
   RedisConnectionManager,
-  initializeRedis,
-  getRedisClient,
-  createRedisClient,
-  createRedisFromEnv,
   RedisConfigSchema,
   type RedisConfig,
   type ConnectionStatus,
-  type Redis,
 } from './client.js';
 
 // === Caching ===
-export {
-  RedisCache,
-  initializeCache,
-  getCache,
-  createCache,
-  getCached,
-  cached,
-  CacheConfigSchema,
-  type CacheConfig,
-  type CacheEntry,
-  type CacheStats,
-  type InvalidationPattern,
-} from './cache.js';
+// Note: Caching functionality not implemented yet
+// export { } from './cache.js';
 
 // === Rate Limiting ===
-export {
-  RedisRateLimiter,
-  initializeRateLimiter,
-  getRateLimiter,
-  createRateLimiter,
-  checkRateLimit,
-  checkSlidingRateLimit,
-  checkTokenBucket,
-  createRateLimitMiddleware,
-  RateLimitConfigSchema,
-  type RateLimitConfig,
-  type RateLimitResult,
-  type RateLimitViolation,
-  type RateLimitAlgorithm,
-} from './rate-limit.js';
+// Note: Rate limiting functionality not implemented yet
+// export { } from './rate-limit.js';
 
 // === Queue Management ===
 export {
@@ -65,35 +36,12 @@ export {
 } from './queue.js';
 
 // === Pub/Sub ===
-export {
-  RedisPubSub,
-  TypedEventEmitter,
-  createPubSub,
-  createTypedEmitter,
-  PubSubConfigSchema,
-  type PubSubConfig,
-  type Event,
-  type EventHandler,
-  type PublishOptions,
-  type SubscriptionOptions,
-  type EmitOptions,
-  type EventMetadata,
-  type CorrelationContext,
-} from './pubsub.js';
+// Note: Pub/Sub functionality not implemented yet
+// export { } from './pubsub.js';
 
 // === Health Monitoring ===
-export {
-  RedisHealthMonitor,
-  initializeHealthMonitor,
-  getHealthMonitor,
-  createHealthMonitor,
-  quickHealthCheck,
-  HealthCheckConfigSchema,
-  type HealthCheckConfig,
-  type HealthStatus,
-  type HealthCheck,
-  type RedisMetrics,
-} from './health.js';
+// Note: Health monitoring not implemented yet
+// export { } from './health.js';
 
 // === Utility Types ===
 
@@ -270,63 +218,5 @@ export const REDIS_PACKAGE_VERSION = '1.0.0';
 export const SUPPORTED_REDIS_VERSION = '6.0.0';
 
 // Default export for convenient access
-export default {
-  // Client
-  RedisConnectionManager,
-  initializeRedis,
-  getRedisClient,
-  createRedisClient,
-  createRedisFromEnv,
-
-  // Cache
-  RedisCache,
-  initializeCache,
-  getCache,
-  createCache,
-  getCached,
-  cached,
-
-  // Rate Limiting
-  RedisRateLimiter,
-  initializeRateLimiter,
-  getRateLimiter,
-  createRateLimiter,
-  checkRateLimit,
-  checkSlidingRateLimit,
-  checkTokenBucket,
-
-  // Queue
-  RedisQueueFactory,
-  initializeQueueFactory,
-  getQueueFactory,
-  createQueueFactory,
-
-  // Pub/Sub
-  RedisPubSub,
-  TypedEventEmitter,
-  createPubSub,
-  createTypedEmitter,
-
-  // Health
-  RedisHealthMonitor,
-  initializeHealthMonitor,
-  getHealthMonitor,
-  createHealthMonitor,
-  quickHealthCheck,
-
-  // Utilities
-  createRedisKey,
-  parseRedisKey,
-  expiryToTTL,
-  formatBytes,
-  generateCorrelationId,
-  isValidRedisKey,
-
-  // Constants
-  DEFAULT_TTL,
-  RATE_LIMIT_PRESETS,
-  QUEUE_PRIORITIES,
-  HEALTH_THRESHOLDS,
-  REDIS_PACKAGE_VERSION,
-  SUPPORTED_REDIS_VERSION,
-};
+// Note: Simplified to avoid import issues during development
+export default {};

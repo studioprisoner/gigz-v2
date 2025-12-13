@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWorkersRouteImport } from './routes/_authenticated/workers'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedQueuesRouteImport } from './routes/_authenticated/queues'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConcertsRouteImport } from './routes/_authenticated/concerts'
+import { Route as AuthenticatedQueuesQueueNameRouteImport } from './routes/_authenticated/queues/$queueName'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -30,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWorkersRoute = AuthenticatedWorkersRouteImport.update({
+  id: '/workers',
+  path: '/workers',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
@@ -51,22 +58,32 @@ const AuthenticatedConcertsRoute = AuthenticatedConcertsRouteImport.update({
   path: '/concerts',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQueuesQueueNameRoute =
+  AuthenticatedQueuesQueueNameRouteImport.update({
+    id: '/$queueName',
+    path: '/$queueName',
+    getParentRoute: () => AuthenticatedQueuesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/concerts': typeof AuthenticatedConcertsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/queues': typeof AuthenticatedQueuesRoute
+  '/queues': typeof AuthenticatedQueuesRouteWithChildren
   '/users': typeof AuthenticatedUsersRoute
+  '/workers': typeof AuthenticatedWorkersRoute
+  '/queues/$queueName': typeof AuthenticatedQueuesQueueNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/concerts': typeof AuthenticatedConcertsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/queues': typeof AuthenticatedQueuesRoute
+  '/queues': typeof AuthenticatedQueuesRouteWithChildren
   '/users': typeof AuthenticatedUsersRoute
+  '/workers': typeof AuthenticatedWorkersRoute
+  '/queues/$queueName': typeof AuthenticatedQueuesQueueNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -75,14 +92,32 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/concerts': typeof AuthenticatedConcertsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/queues': typeof AuthenticatedQueuesRoute
+  '/_authenticated/queues': typeof AuthenticatedQueuesRouteWithChildren
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/workers': typeof AuthenticatedWorkersRoute
+  '/_authenticated/queues/$queueName': typeof AuthenticatedQueuesQueueNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/concerts' | '/dashboard' | '/queues' | '/users'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/concerts'
+    | '/dashboard'
+    | '/queues'
+    | '/users'
+    | '/workers'
+    | '/queues/$queueName'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/concerts' | '/dashboard' | '/queues' | '/users'
+  to:
+    | '/'
+    | '/login'
+    | '/concerts'
+    | '/dashboard'
+    | '/queues'
+    | '/users'
+    | '/workers'
+    | '/queues/$queueName'
   id:
     | '__root__'
     | '/'
@@ -92,6 +127,8 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/queues'
     | '/_authenticated/users'
+    | '/_authenticated/workers'
+    | '/_authenticated/queues/$queueName'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -123,6 +160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/workers': {
+      id: '/_authenticated/workers'
+      path: '/workers'
+      fullPath: '/workers'
+      preLoaderRoute: typeof AuthenticatedWorkersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/users': {
       id: '/_authenticated/users'
       path: '/users'
@@ -151,21 +195,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConcertsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/queues/$queueName': {
+      id: '/_authenticated/queues/$queueName'
+      path: '/$queueName'
+      fullPath: '/queues/$queueName'
+      preLoaderRoute: typeof AuthenticatedQueuesQueueNameRouteImport
+      parentRoute: typeof AuthenticatedQueuesRoute
+    }
   }
 }
+
+interface AuthenticatedQueuesRouteChildren {
+  AuthenticatedQueuesQueueNameRoute: typeof AuthenticatedQueuesQueueNameRoute
+}
+
+const AuthenticatedQueuesRouteChildren: AuthenticatedQueuesRouteChildren = {
+  AuthenticatedQueuesQueueNameRoute: AuthenticatedQueuesQueueNameRoute,
+}
+
+const AuthenticatedQueuesRouteWithChildren =
+  AuthenticatedQueuesRoute._addFileChildren(AuthenticatedQueuesRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedConcertsRoute: typeof AuthenticatedConcertsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRoute
+  AuthenticatedQueuesRoute: typeof AuthenticatedQueuesRouteWithChildren
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedWorkersRoute: typeof AuthenticatedWorkersRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedConcertsRoute: AuthenticatedConcertsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedQueuesRoute: AuthenticatedQueuesRoute,
+  AuthenticatedQueuesRoute: AuthenticatedQueuesRouteWithChildren,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedWorkersRoute: AuthenticatedWorkersRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -1,0 +1,45 @@
+# Base Dockerfile for Bun services
+FROM oven/bun:1.1.29-alpine AS base
+
+# Install Python for native module compilation
+RUN apk add --no-cache python3 make g++
+
+# Set working directory
+WORKDIR /app
+
+# Copy workspace configuration
+COPY package.json bun.lock ./
+
+# Copy workspace packages for dependency resolution
+COPY packages packages
+COPY tooling tooling
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Development stage
+FROM base AS development
+
+# Copy source code
+COPY . .
+
+# Expose common ports
+EXPOSE 3001 3002 3003 3004 3005 3006
+
+# Default command (override in docker-compose)
+CMD ["bun", "run", "dev"]
+
+# Production stage
+FROM base AS production
+
+# Copy source code
+COPY . .
+
+# Build the application (if needed)
+# RUN bun run build
+
+# Expose port
+EXPOSE 3000
+
+# Default command (override in docker-compose)
+CMD ["bun", "run", "start"]

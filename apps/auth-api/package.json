@@ -12,18 +12,18 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@gigz/config": "workspace:*",
     "@gigz/db": "workspace:*",
+    "@gigz/logger": "workspace:*",
+    "@gigz/redis": "workspace:*",
     "@gigz/trpc": "workspace:*",
     "@gigz/types": "workspace:*",
-    "@gigz/redis": "workspace:*",
-    "@gigz/logger": "workspace:*",
-    "@gigz/config": "workspace:*",
     "@trpc/server": "^10.45.0",
-    "trpc-openapi": "^1.2.0",
+    "argon2": "^0.44.0",
     "google-auth-library": "^9.14.1",
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.1.0",
-    "argon2": "^0.41.0",
+    "trpc-openapi": "^1.2.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {

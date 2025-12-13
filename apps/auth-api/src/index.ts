@@ -17,7 +17,7 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.AUTH_API_PORT || 3002;
 
 const server = Bun.serve({
   port: PORT,

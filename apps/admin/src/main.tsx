@@ -16,7 +16,7 @@ const queryClient = getQueryClient();
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: 'http://localhost:3001/trpc', // Gateway URL
+      url: 'http://localhost:3002/trpc', // Auth API URL (direct connection)
       headers() {
         const token = localStorage.getItem('admin-token');
         return {

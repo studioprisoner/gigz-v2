@@ -1,0 +1,382 @@
+# Gigz V2 Development Environment
+# Complete containerized development stack with all services
+
+services:
+  # Database Services
+  postgres:
+    image: postgres:15-alpine
+    container_name: gigz-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gigz_dev
+      POSTGRES_USER: gigz
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gigz -d gigz_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8-alpine
+    container_name: gigz-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: gigz_analytics
+      CLICKHOUSE_USER: gigz
+      CLICKHOUSE_PASSWORD: password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docker/clickhouse/init:/docker-entrypoint-initdb.d
+      - ./docker/clickhouse/config:/etc/clickhouse-server/config.d
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: gigz-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass password
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.4
+    container_name: gigz-meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: masterKey123
+      MEILI_NO_ANALYTICS: true
+      MEILI_HTTP_PAYLOAD_SIZE_LIMIT: 100MB
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  # Application Services
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://gigz:password@postgres:5432/gigz_dev
+      REDIS_URL: redis://:password@redis:6379
+      CLICKHOUSE_URL: http://gigz:password@clickhouse:8123/gigz_analytics
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_KEY: masterKey123
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/gateway
+    command: ["bun", "run", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  auth-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-auth-api
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      DATABASE_URL: postgresql://gigz:password@postgres:5432/gigz_dev
+      REDIS_URL: redis://:password@redis:6379
+      JWT_SECRET: dev-jwt-secret-key
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/auth-api
+    command: ["bun", "run", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  core-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-core-api
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      DATABASE_URL: postgresql://gigz:password@postgres:5432/gigz_dev
+      REDIS_URL: redis://:password@redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/core-api
+    command: ["bun", "run", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  concert-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-concert-api
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      CLICKHOUSE_URL: http://gigz:password@clickhouse:8123/gigz_analytics
+      REDIS_URL: redis://:password@redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/concert-api
+    command: ["bun", "run", "dev"]
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  search-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-search-api
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: development
+      PORT: 3005
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_KEY: masterKey123
+      REDIS_URL: redis://:password@redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/search-api
+    command: ["bun", "run", "dev"]
+    depends_on:
+      meilisearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  scraper-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-scraper-worker
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://gigz:password@postgres:5432/gigz_dev
+      CLICKHOUSE_URL: http://gigz:password@clickhouse:8123/gigz_analytics
+      REDIS_URL: redis://:password@redis:6379
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_KEY: masterKey123
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/scraper-worker
+    command: ["bun", "run", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  notification-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.base
+      target: development
+    container_name: gigz-notification-worker
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://gigz:password@postgres:5432/gigz_dev
+      REDIS_URL: redis://:password@redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/*/node_modules
+      - /app/packages/*/node_modules
+    working_dir: /app/apps/notification-worker
+    command: ["bun", "run", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.admin
+      target: development
+    container_name: gigz-admin
+    ports:
+      - "5173:5173"
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3001
+    volumes:
+      - ./apps/admin:/app/apps/admin
+      - /app/apps/admin/node_modules
+      - ./packages:/app/packages
+      - ./tooling:/app/tooling
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  # Development Tools
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gigz-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: "local:redis:6379:0:password"
+      HTTP_USER: admin
+      HTTP_PASSWORD: password
+    depends_on:
+      - redis
+    profiles:
+      - tools
+    networks:
+      - gigz-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gigz-pgadmin
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gigz.dev
+      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+    networks:
+      - gigz-network
+
+volumes:
+  postgres_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  redis_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  gigz-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
