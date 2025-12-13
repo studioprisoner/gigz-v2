@@ -13,11 +13,13 @@
     "migrate": "drizzle-kit migrate",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:admin": "bun run scripts/seed-admin.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.30.0",
-    "postgres": "^3.4.0"
+    "postgres": "^3.4.0",
+    "argon2": "^0.41.0"
   },
   "devDependencies": {
     "@gigz/typescript-config": "workspace:*",

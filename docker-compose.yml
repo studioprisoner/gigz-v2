@@ -1,0 +1,161 @@
+# Gigz V2 Development Infrastructure
+# Provides all required databases and services for local development
+
+services:
+  # PostgreSQL - Main application database
+  postgres:
+    image: postgres:15-alpine
+    container_name: gigz-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gigz_dev
+      POSTGRES_USER: gigz
+      POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gigz -d gigz_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  # ClickHouse - Analytics and concert data
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8-alpine
+    container_name: gigz-clickhouse
+    ports:
+      - "8123:8123" # HTTP interface
+      - "9000:9000" # Native interface
+    environment:
+      CLICKHOUSE_DB: gigz_analytics
+      CLICKHOUSE_USER: gigz
+      CLICKHOUSE_PASSWORD: password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docker/clickhouse/init:/docker-entrypoint-initdb.d
+      - ./docker/clickhouse/config:/etc/clickhouse-server/config.d
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8123/ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  # Redis - Caching, queuing, rate limiting, pub/sub
+  redis:
+    image: redis:7.2-alpine
+    container_name: gigz-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass password
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  # Meilisearch - Search engine for concerts and artists
+  meilisearch:
+    image: getmeili/meilisearch:v1.4
+    container_name: gigz-meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: masterKey123
+      MEILI_NO_ANALYTICS: true
+      MEILI_HTTP_PAYLOAD_SIZE_LIMIT: 100MB
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gigz-network
+
+  # Optional: Redis Commander (Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gigz-redis-commander
+    hostname: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: "local:gigz-redis:6379:0:password"
+      HTTP_USER: admin
+      HTTP_PASSWORD: password
+    depends_on:
+      - redis
+    profiles:
+      - tools
+    networks:
+      - gigz-network
+
+  # Optional: pgAdmin (PostgreSQL GUI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gigz-pgadmin
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gigz.dev
+      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+    networks:
+      - gigz-network
+
+volumes:
+  postgres_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  redis_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  gigz-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

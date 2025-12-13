@@ -1,6 +1,7 @@
 import { db, users, userIdentities } from '@gigz/db';
 import { eq, and } from 'drizzle-orm';
 import { generateUsername } from './username';
+import { hash, verify } from 'argon2';
 
 export interface CreateUserParams {
   provider: 'apple' | 'google';
@@ -80,6 +81,42 @@ export async function findUserByIdentity(provider: string, providerUserId: strin
     ),
     with: { user: true },
   });
-  
+
   return identity?.user;
+}
+
+export async function findAdminByEmail(email: string) {
+  return await db.query.users.findFirst({
+    where: and(
+      eq(users.email, email),
+      eq(users.isAdmin, true)
+    ),
+  });
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return await hash(password);
+}
+
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    return await verify(hashedPassword, password);
+  } catch {
+    return false;
+  }
+}
+
+export async function createAdminUser(email: string, password: string, displayName: string) {
+  const passwordHash = await hashPassword(password);
+  const username = await generateUsername(displayName);
+
+  const [newAdmin] = await db.insert(users).values({
+    email,
+    username,
+    displayName,
+    passwordHash,
+    isAdmin: true,
+  }).returning();
+
+  return newAdmin;
 }

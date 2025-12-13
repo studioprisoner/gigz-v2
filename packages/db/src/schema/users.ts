@@ -20,6 +20,10 @@ export const users = pgTable('users', {
   // Privacy
   profileVisibility: varchar('profile_visibility', { length: 20 }).default('friends_only'),
 
+  // Admin
+  isAdmin: boolean('is_admin').default(false),
+  passwordHash: varchar('password_hash', { length: 255 }),
+
   // Migration
   legacySupabaseId: uuid('legacy_supabase_id'),
 

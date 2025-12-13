@@ -128,3 +128,6 @@ docker-compose.override.yml
 
 # Generated files
 generated/
+
+# Development documentation (local only)
+LOCAL_DEVELOPMENT.md

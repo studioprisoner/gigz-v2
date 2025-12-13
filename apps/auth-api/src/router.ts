@@ -4,9 +4,82 @@ import { UserSchema, SignInResponseSchema } from '@gigz/types';
 import { verifyAppleToken } from './lib/apple';
 import { verifyGoogleToken } from './lib/google';
 import { generateTokenPair, verifyRefreshToken, revokeRefreshToken, revokeAllUserTokens } from './lib/tokens';
-import { findOrCreateUser, findUserById } from './lib/users';
+import { findOrCreateUser, findUserById, findAdminByEmail, verifyPassword } from './lib/users';
+import { db, users } from '@gigz/db';
+import { count } from 'drizzle-orm';
 
 export const authRouter = router({
+  // Admin Login
+  adminLogin: publicProcedure
+    .meta({ openapi: { method: 'POST', path: '/auth/admin/login' } })
+    .input(z.object({
+      email: z.string().email(),
+      password: z.string(),
+    }))
+    .output(z.object({
+      accessToken: z.string(),
+      refreshToken: z.string(),
+      expiresIn: z.number(),
+      user: z.object({
+        id: z.string(),
+        email: z.string().nullable(),
+        username: z.string(),
+        displayName: z.string(),
+        isAdmin: z.boolean(),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // 1. Find admin user by email
+        const adminUser = await findAdminByEmail(input.email);
+
+        if (!adminUser || !adminUser.isAdmin) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid credentials',
+          });
+        }
+
+        // 2. Verify password
+        if (!adminUser.passwordHash) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid credentials',
+          });
+        }
+
+        const isValidPassword = await verifyPassword(input.password, adminUser.passwordHash);
+
+        if (!isValidPassword) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid credentials',
+          });
+        }
+
+        // 3. Generate tokens
+        const tokens = await generateTokenPair(adminUser.id);
+
+        return {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresIn: tokens.expiresIn,
+          user: {
+            id: adminUser.id,
+            email: adminUser.email,
+            username: adminUser.username,
+            displayName: adminUser.displayName,
+            isAdmin: adminUser.isAdmin,
+          },
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: error instanceof TRPCError ? error.message : 'Admin login failed',
+        });
+      }
+    }),
+
   // Apple Sign-In
   signInWithApple: publicProcedure
     .meta({ openapi: { method: 'POST', path: '/auth/apple' } })
@@ -180,6 +253,127 @@ export const authRouter = router({
           message: 'Failed to logout',
         });
       }
+    }),
+
+  // Admin Dashboard Stats
+  adminDashboardStats: protectedProcedure
+    .meta({ openapi: { method: 'GET', path: '/auth/admin/dashboard/stats' } })
+    .output(z.object({
+      users: z.object({
+        total: z.number(),
+        active: z.number(),
+        suspended: z.number(),
+        monthlyGrowth: z.number(),
+      }),
+      concerts: z.object({
+        total: z.number(),
+        verified: z.number(),
+        unmatched: z.number(),
+        duplicates: z.number(),
+      }),
+      queues: z.object({
+        total: z.number(),
+        active: z.number(),
+        pending: z.number(),
+        failed: z.number(),
+      }),
+      health: z.object({
+        postgresql: z.object({
+          healthy: z.boolean(),
+          lastCheck: z.string(),
+        }),
+        redis: z.object({
+          healthy: z.boolean(),
+          lastCheck: z.string(),
+        }),
+        clickhouse: z.object({
+          healthy: z.boolean(),
+          lastCheck: z.string(),
+        }),
+        meilisearch: z.object({
+          healthy: z.boolean(),
+          lastCheck: z.string(),
+        }),
+      }),
+      recentActivity: z.object({
+        users: z.array(z.object({
+          id: z.string(),
+          name: z.string(),
+          email: z.string().nullable(),
+          createdAt: z.string(),
+        })),
+      }),
+    }))
+    .query(async ({ ctx }) => {
+      // Check if user is admin
+      if (!ctx.user.id) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Admin access required',
+        });
+      }
+
+      const adminUser = await findUserById(ctx.user.id);
+      if (!adminUser || !adminUser.isAdmin) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Admin access required',
+        });
+      }
+
+      // Get user stats
+      const [userCount] = await db.select({ count: count() }).from(users);
+      const recentUsers = await db.query.users.findMany({
+        limit: 5,
+        orderBy: (users, { desc }) => [desc(users.createdAt)],
+      });
+
+      return {
+        users: {
+          total: userCount.count,
+          active: userCount.count, // For now, assume all users are active
+          suspended: 0,
+          monthlyGrowth: 12, // Mock value for now
+        },
+        concerts: {
+          total: 0, // No concerts data yet
+          verified: 0,
+          unmatched: 0,
+          duplicates: 0,
+        },
+        queues: {
+          total: 0, // No queue data yet
+          active: 0,
+          pending: 0,
+          failed: 0,
+        },
+        health: {
+          postgresql: {
+            healthy: true,
+            lastCheck: new Date().toISOString(),
+          },
+          redis: {
+            healthy: true,
+            lastCheck: new Date().toISOString(),
+          },
+          clickhouse: {
+            healthy: true,
+            lastCheck: new Date().toISOString(),
+          },
+          meilisearch: {
+            healthy: true,
+            lastCheck: new Date().toISOString(),
+          },
+        },
+        recentActivity: {
+          users: recentUsers.map(user => ({
+            id: user.id,
+            name: user.displayName,
+            email: user.email,
+            createdAt: (user.createdAt || new Date()).toISOString(),
+          })),
+        },
+      };
     }),
 
   // Get current user (for testing auth)

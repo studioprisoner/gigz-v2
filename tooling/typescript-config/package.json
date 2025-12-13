@@ -1,7 +1,6 @@
-// tooling/typescript-config/package.json
 {
   "name": "@gigz/typescript-config",
   "version": "0.0.0",
   "private": true,
-  "files": ["base.json", "bun.json"]
+  "files": ["base.json", "bun.json", "react.json"]
 }
