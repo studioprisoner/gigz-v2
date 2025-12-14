@@ -1,5 +1,6 @@
 import { router, protectedProcedure, publicProcedure, TRPCError } from '@gigz/trpc';
-import { db, users } from '@gigz/db';\nimport { eq, ilike, or } from 'drizzle-orm';
+import { db, users } from '@gigz/db';
+import { eq, ilike, or } from 'drizzle-orm';
 import { UserSchema } from '@gigz/types';
 import { z } from 'zod';
 import { canViewProfile, toPublicUser } from '../lib/privacy';
@@ -22,6 +23,7 @@ export const usersRouter = router({
   // Get current user profile
   me: protectedProcedure
     .meta({ openapi: { method: 'GET', path: '/users/me', protect: true, tags: ['Users'] } })
+    .input(z.object({}))
     .output(UserSchema)
     .query(async ({ ctx }) => {
       const user = await db.query.users.findFirst({
@@ -140,6 +142,10 @@ export const usersRouter = router({
     .meta({ openapi: { method: 'POST', path: '/users/me/avatar-confirm', protect: true, tags: ['Users'] } })
     .input(z.object({
       avatarId: z.string(), // The storage key
+    }))
+    .output(z.object({
+      success: z.boolean(),
+      avatarUrl: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
       const publicUrl = getPublicUrl(input.avatarId);

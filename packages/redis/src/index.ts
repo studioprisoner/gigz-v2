@@ -39,6 +39,14 @@ export {
 // Note: Pub/Sub functionality not implemented yet
 // export { } from './pubsub.js';
 
+// === Settings Management ===
+export {
+  ScraperSettingsManager,
+  scraperSettings,
+  type ScraperServiceConfig,
+  type ScraperSettings,
+} from './settings.js';
+
 // === Health Monitoring ===
 // Note: Health monitoring not implemented yet
 // export { } from './health.js';

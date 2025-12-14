@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
-import { createOpenApiHttpHandler } from 'trpc-openapi';
+// import { createOpenApiHttpHandler } from 'trpc-openapi';
 import { coreRouter } from './router';
 import { createContext } from './context';
 
@@ -19,13 +19,13 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.CORE_API_PORT || 3003;
 
-// OpenAPI handler for REST endpoints
-const openApiHandler = createOpenApiHttpHandler({
-  router: coreRouter,
-  createContext,
-});
+// OpenAPI handler for REST endpoints - temporarily disabled
+// const openApiHandler = createOpenApiHttpHandler({
+//   router: coreRouter,
+//   createContext,
+// });
 
 const server = Bun.serve({
   port: PORT,
@@ -76,24 +76,13 @@ const server = Bun.serve({
       return response;
     }
 
-    // Handle OpenAPI/REST requests
-    try {
-      const response = await openApiHandler(req);
-      
-      // Add CORS headers to OpenAPI responses
-      response.headers.set('Access-Control-Allow-Origin', '*');
-      return response;
-    } catch (error) {
-      console.error('OpenAPI handler error:', error);
-      
-      // 404 for other routes
-      return new Response('Not Found', {
-        status: 404,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    }
+    // Handle other requests - OpenAPI disabled temporarily
+    return new Response('Not Found', {
+      status: 404,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   },
 });
 

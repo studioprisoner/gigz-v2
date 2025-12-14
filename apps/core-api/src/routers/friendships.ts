@@ -1,5 +1,6 @@
 import { router, protectedProcedure, TRPCError } from '@gigz/trpc';
-import { db, friendships, followRequests, blockedUsers, users } from '@gigz/db';\nimport { eq, and, or } from 'drizzle-orm';
+import { db, friendships, followRequests, blockedUsers, users } from '@gigz/db';
+import { eq, and, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { 
   createFriendship, 

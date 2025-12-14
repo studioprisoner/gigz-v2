@@ -1,5 +1,6 @@
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
-import { db, users } from '@gigz/db';\nimport { eq } from 'drizzle-orm';
+import { db, users } from '@gigz/db';
+import { eq } from 'drizzle-orm';
 
 export interface CoreAPIContext {
   user?: {

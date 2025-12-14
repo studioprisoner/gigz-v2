@@ -41,6 +41,11 @@ const navigation = [
     icon: Cog,
   },
   {
+    name: 'Settings',
+    to: '/settings',
+    icon: Settings,
+  },
+  {
     name: 'Concerts',
     to: '/concerts',
     icon: ListMusic,

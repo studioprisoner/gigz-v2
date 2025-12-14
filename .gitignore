@@ -131,6 +131,7 @@ generated/
 
 # Development documentation (local only)
 LOCAL_DEVELOPMENT.md
+ENV_SETUP.md
 
 # Production environment (contains secrets)
 .env.prod

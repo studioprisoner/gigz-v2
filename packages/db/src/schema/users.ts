@@ -24,6 +24,12 @@ export const users = pgTable('users', {
   isAdmin: boolean('is_admin').default(false),
   passwordHash: varchar('password_hash', { length: 255 }),
 
+  // Admin moderation fields
+  suspendedAt: timestamp('suspended_at', { withTimezone: true }),
+  suspendedReason: text('suspended_reason'),
+  suspendedBy: uuid('suspended_by'),
+  lastActiveAt: timestamp('last_active_at', { withTimezone: true }),
+
   // Migration
   legacySupabaseId: uuid('legacy_supabase_id'),
 
@@ -31,6 +37,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  deletedBy: uuid('deleted_by'),
 });
 
 export const userIdentities = pgTable('user_identities', {

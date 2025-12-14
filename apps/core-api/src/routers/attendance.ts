@@ -1,5 +1,6 @@
 import { router, protectedProcedure, TRPCError } from '@gigz/trpc';
-import { db, attendances, attendancePhotos, users } from '@gigz/db';\nimport { eq, and, desc, count, sql } from 'drizzle-orm';
+import { db, attendances, attendancePhotos, users } from '@gigz/db';
+import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { canViewAttendance } from '../lib/privacy';
 import { getConcertById, getConcertsByIds, incrementConcertAttendance, decrementConcertAttendance } from '../lib/clickhouse';
